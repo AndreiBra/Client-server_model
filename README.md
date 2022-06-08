@@ -279,6 +279,350 @@ Host layers (уровни хоста).
 
 Рассмотрим на примере: пользователь 1 отправляет картинку, которая обрабатывается на седьмом уровне в виде данных, данные должны пройти все уровни до самого нижнего (первого), где будут представлены как биты. Этот процесс называется инкапсуляцией. Компьютер пользователя 2 принимает биты, которые должны снова стать данными. Этот обратный процесс называется декапсуляция.
 
-
+Разница между сетевыми моделями TСP/IP и OSI можно посмотреть [здесь](https://github.com/AndreiBra/TCP.IP-OSI) 
 ```
 17) Хедеры http запросов
+```
+HTTP-протокол состоит только из текста. 
+
+Каждое сообщение состоит из трех частей:
+Стартовая строка (Starting line) — определяет служебные данные.
+Заголовки (Headers) — описание параметров сообщения.
+Тело сообщения (Body) — данные сообщения. Должны отделяться от заголовков пустой строкой.
+По HTTP-протоколу можно отправить запрос на сервер (request) и получить ответ от сервера (response). Запросы и ответы немного отличаются параметрами.
+
+Заголовки HTTP в запросах HTTP
+
+Наиболее распространенные HTTP headers, найденных в HTTP requests.
+
+Почти все эти заголовки можно найти в массиве $ _SERVER в PHP. Вы также можете использовать функцию getallheaders() для извлечения всех заголовков одновременно.
+
+Host
+HTTP-запрос отправляется на определенные IP-адреса. Но так как большинство серверов способны размещать несколько сайтов под одним IP, они должны знать, какое доменное имя ищет браузер.
+
+1 Host: net.tutsplus.com
+
+Это в основном имя host, включая домен и поддомен.
+
+В PHP его можно найти, как $_SERVER['HTTP_HOST'] или $_SERVER['SERVER_NAME'].
+
+User-Agent
+
+1 User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.5) Gecko/20091102 Firefox/3.5.5 (.NET CLR 3.5.30729)
+
+Этот заголовок может содержать несколько частей информации, таких как:
+
+Имя и версия браузера.
+Название и версия операционной системы.
+Язык по умолчанию.
+Именно так веб-сайты могут собирать определённую общую информацию о своих системах surfers. Например, они могут определить, использует ли surfer  мобильный браузер и перенаправляет их на мобильную версию своего веб-сайта, который лучше работает с низким разрешением.
+
+В PHP может быть выражен так: $_SERVER['HTTP_USER_AGENT'].
+
+1 if ( strstr($_SERVER['HTTP_USER_AGENT'],'MSIE 6') ) {
+2  echo "Please stop using IE6!";
+3 }
+
+Accept-Language
+1 Accept-Language: en-us,en;q=0.5
+Этот заголовок отображает настройки языка по умолчанию.   Если сайт имеет разные языковые версии, он может перенаправить нового surfer на основе этих данных.
+
+Он может содержать несколько языков, разделённых запятыми. Первый - это предпочтительный язык, и каждый из перечисленных языков может иметь значение «q», которое представляет собой оценку предпочтения пользователя для языка (min. 0 max. 1).
+
+В PHP его можно найти так: $ _SERVER ["HTTP_ACCEPT_LANGUAGE"].
+
+1 if (substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2) == 'fr') {
+2    header('Location: http://french.mydomain.com');
+3 }
+
+Accept-Encoding
+
+1 Accept-Encoding: gzip,deflate
+Большинство современных браузеров поддерживают gzip и отправляют это в header. Затем веб-сервер может отправить выходной HTML-код в сжатом формате. Это позволяет уменьшить размер до 80% для экономии пропускной способности и времени.
+
+В PHP его можно найти так: $ _SERVER ["HTTP_ACCEPT_ENCODING"]. Однако, когда вы используете функцию обратного вызова ob_gzhandler(), она будет проверять значение автоматически, поэтому вам это не нужно.
+
+1 // enables output buffering
+2 // and all output is compressed if the browser supports it
+3 ob_start('ob_gzhandler');
+
+If-Modified-Since
+
+Если веб-документ уже сохранен в кеше в браузере и вы посещаете его снова, ваш браузер может проверить, был ли документ обновлён, отправив следующее:
+
+1 If-Modified-Since: Sat, 28 Nov 2009 06:38:19 GMT
+
+Если он не изменялся с этой даты, сервер отправляет код ответа «304 Not Modified», а содержимое - нет, и браузер загружает содержимое из cache.
+
+В PHP его можно найти так: $ _SERVER ['HTTP_IF_MODIFIED_SINCE'].
+
+01 // assume $last_modify_time was the last the output was updated
+02 
+03 // did the browser send If-Modified-Since header?
+04 if(isset($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
+05 
+06    // if the browser cache matches the modify time
+07    if ($last_modify_time == strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE'])) {
+08 
+09        // send a 304 header, and no content
+10        header("HTTP/1.1 304 Not Modified");
+11        exit;
+12    }
+13 
+14 }
+
+Существует также HTTP-заголовок Etag, который можно использовать для проверки текущего кэша. 
+
+Cookie
+
+Как следует из названия, это отправляет файлы cookie, хранящиеся в вашем браузере для этого домена.
+
+1 Cookie: PHPSESSID=r2t5uvjq435r4q7ib3vtdjq120; foo=bar
+
+Это пары name=value, разделённые точками с запятой. Cookies могут также содержать id сеанса.
+
+В PHP отдельные cookie-файлы могут быть доступны с помощью массива $ _COOKIE. Вы можете напрямую обращаться к переменным сеанса, используя массив $ _SESSION, и если вам нужен id сеанса, вы можете использовать функцию session_id () вместо cookie.
+
+1 echo $_COOKIE['foo'];
+2 // output: bar
+3 echo $_COOKIE['PHPSESSID'];
+4 // output: r2t5uvjq435r4q7ib3vtdjq120
+5 session_start();
+6 echo session_id();
+7 // output: r2t5uvjq435r4q7ib3vtdjq120
+
+Referer
+
+Как следует из названия, этот HTTP header содержит ссылочный url.
+
+Например, если я зашел на домашнюю страницу Nettuts + и нажал ссылку на статью, этот header будет отправлен в мой браузер:
+
+1 Referer: https://net.tutsplus.com/
+
+В PHP его можно найти как $ _SERVER ['HTTP_REFERER'].
+
+01 if (isset($_SERVER['HTTP_REFERER'])) {
+02 
+03    $url_info = parse_url($_SERVER['HTTP_REFERER']);
+04 
+05    // is the surfer coming from Google?
+06    if ($url_info['host'] == 'www.google.com') {
+07 
+08        parse_str($url_info['query'], $vars);
+09 
+10        echo "You searched on Google for this keyword: ". $vars['q'];
+11 
+12    }
+13 
+14 }
+15 // if the referring url was:
+16 // http://www.google.com/search?source=ig&hl=en&rlz=&=&q=http+headers&aq=f&oq=&aqi=g-p1g9
+17 // the output will be:
+18 // You searched on Google for this keyword: http headers
+
+Возможно, вы заметили, что слово «referrer» написано с ошибкой, как «referer». К сожалению, он превратился в официальную спецификацию HTTP подобным образом и застрял.
+
+Authorization
+
+Когда веб-страница запрашивает авторизацию, браузер открывает окно входа в систему. Когда вы вводите имя пользователя и пароль в этом окне, браузер отправляет другой HTTP-запрос, но на этот раз он содержит этот header
+
+1 Authorization: Basic bXl1c2VyOm15cGFzcw==
+
+Данные внутри header имеют кодировку base64. Например, base64_decode ('bXl1c2VyOm15cGFzcw ==') возвратит 'myuser: mypass'
+
+В PHP эти значения можно найти как $ _SERVER ['PHP_AUTH_USER'] и $ _SERVER ['PHP_AUTH_PW'].
+
+
+
+Заголовки HTTP в ответах HTTP
+
+Теперь мы рассмотрим некоторые из наиболее распространенных HTTP headers, найденных в HTTP-ответах.
+
+В PHP вы можете установить заголовки ответа, используя функцию header(). PHP уже отправляет определённые заголовки автоматически, для загрузки содержимого и настройки файлов cookie и прочее... Вы можете увидеть headers, которые отправляются или будут отправляться с помощью функции headers_list (). Вы можете проверить, были ли уже отправлены заголовки с помощью функции headers_sent().
+
+Cache-Control
+Определение из w3.org: «Поле заголовка Cache-Control используется для указания директив, которые ДОЛЖНЫ выполняться всеми механизмами кэширования по цепочке запросов/ответов». Эти «механизмы кэширования» включают шлюзы и прокси, которые может использовать ваш интернет-провайдер.
+
+Пример:
+
+1 Cache-Control: max-age=3600, public
+
+"public" означает, что ответ может быть кэширован кем угодно. "max-age" указывает, сколько секунд действителен кеш. Разрешение кэширования вашего сайта может снизить нагрузку на сервер и пропускную способность, а также увеличить время загрузки в браузере.
+
+Кэширование также может быть предотвращено с помощью директивы "no-cache".
+
+1 Cache-Control: no-cache
+
+
+Content-Type
+
+Этот header указывает "mime-type" документа. Затем браузер определяет, как интерпретировать содержимое на основании этого. Например, страница html (или PHP-скрипт с выходом html) может возвращать это:
+
+1 Content-Type: text/html; charset=UTF-8
+"text" - это тип, а "html" - подтип документа. Заголовок также может содержать больше информации, такой как charset.
+
+Для gif-изображения это может быть отправлено.
+
+1 Content-Type: image/gif
+Браузер может использовать внешнее приложение или расширение браузера на основе mime-type. Например, это приведет к загрузке Adobe Reader:
+
+1 Content-Type: application/pdf
+
+При загрузке напрямую Apache обычно может обнаружить mime-тип документа и отправить соответствующий header. Кроме того, большинство браузеров имеют некоторую степень отказоустойчивости и автоопределение типов mime, если заголовки указаны неверно или отсутствуют.
+
+Вы можете найти список общих типов mime here.
+
+В PHP вы можете использовать функцию finfo_file() для определения mime-типа файла.
+
+Content-Disposition
+
+Этот header указывает браузеру открыть окно загрузки файла, вместо того, чтобы пытаться проанализировать содержимое. Пример:
+
+1 Content-Disposition: attachment; filename="download.zip"
+
+Это заставит браузер сделать это:
+
+
+Обратите внимание, что соответствующий заголовок Content-Type также должен быть отправлен вместе с этим:
+
+1 Content-Type: application/zip
+2 Content-Disposition: attachment; filename="download.zip"
+
+Content-Length 
+
+Когда контент будет передаваться браузеру, сервер может указать его размер (в байтах), используя этот header.
+
+1 Content-Length: 89123 
+
+Это особенно полезно при загрузке файлов. Именно так браузер может определить ход загрузки.
+
+Например, вот сценарий-макет,  имитирует медленную загрузку.
+
+01 // it's a zip file
+02 header('Content-Type: application/zip');
+03 // 1 million bytes (about 1megabyte)
+04 header('Content-Length: 1000000');
+05 // load a download dialogue, and save it as download.zip
+06 header('Content-Disposition: attachment; filename="download.zip"');
+07 
+08 // 1000 times 1000 bytes of data
+09 for ($i = 0; $i < 1000; $i++) {
+10    echo str_repeat(".",1000);
+11 
+12   // sleep to slow down the download
+13    usleep(50000);
+14 }
+
+
+
+
+Теперь я собираюсь закомментировать заголовок Content-Length
+
+01 // it's a zip file
+02 header('Content-Type: application/zip');
+03 // the browser won't know the size
+04 // header('Content-Length: 1000000');
+05 // load a download dialogue, and save it as download.zip
+06 header('Content-Disposition: attachment; filename="download.zip"');
+07 
+08 // 1000 times 1000 bytes of data
+09 for ($i = 0; $i < 1000; $i++) {
+10    echo str_repeat(".",1000);
+11 
+12    // sleep to slow down the download
+13    usleep(50000);
+14 }
+
+
+
+Браузер может только сказать, сколько байтов было загружено, но он не знает общую сумму. И индикатор выполнения не показывает прогресс.
+
+Etag
+ 
+Это еще один header, который используется для кеширования. Это выглядит так:
+
+1 Etag: "pub1259380237;gz"
+
+Веб-сервер может отправлять этот header с каждым документом, который он обслуживает. Значение может быть основано на последней изменённой дате, размере файла или даже контрольной сумме файла. Браузер затем сохраняет это значение, так как он кэширует документ. В следующий раз, когда браузер запрашивает тот же файл, он отправляет это в HTTP-запросе:
+
+1 If-None-Match: "pub1259380237;gz"
+Если значение Etag документа совпадает с этим, сервер будет отправлять код 304 вместо 200, и никакого содержимого. Браузер будет загружать содержимое из своего кеша.
+
+Last-Modified
+
+Как следует из названия, этот header указывает дату последнего изменения документа в формате GMT:
+
+1 Last-Modified: Sat, 28 Nov 2009 03:50:37 GMT
+
+1 $modify_time = filemtime($file);
+2 
+3 header("Last-Modified: " . gmdate("D, d M Y H:i:s", $modify_time) . " GMT");
+
+Это предлагает браузеру другой способ для cache документа. Браузер может отправить это в HTTP-запросе:
+
+1 If-Modified-Since: Sat, 28 Nov 2009 06:38:19 GMT
+Мы уже говорили об этом ранее в разделе "If-Modified-Since".
+
+Location
+
+Этот заголовок используется для перенаправления. Если код ответа 301 или 302, сервер также должен отправить этот header. Например, когда вы перейдете на страницу http://www.nettuts.com, ваш браузер получит следующее:
+
+1 HTTP/1.x 301 Moved Permanently
+2 ...
+3 Location: https://net.tutsplus.com/
+4 ...
+
+В PHP вы можете перенаправить surfer так:
+
+1 header('Location: https://net.tutsplus.com/');
+По умолчанию, это отправит 302 код ответа. Если вы хотите вместо 301 отправить:
+
+1 header('Location: https://net.tutsplus.com/', true, 301);
+
+Set-Cookie
+
+Когда веб-сайт хочет установить или обновить файл cookie в вашем браузере, он будет использовать этот header.
+
+1 Set-Cookie: skin=noskin; path=/; domain=.amazon.com; expires=Sun, 29-Nov-2009 21:42:28 GMT
+2 Set-Cookie: session-id=120-7333518-8165026; path=/; domain=.amazon.com; expires=Sat Feb 27 08:00:00 2010 GMT
+
+Каждый файл cookie отправляется как отдельный header. Обратите внимание, что файлы cookie, установленные с помощью JavaScript, не проходят через HTTP headers.
+
+В PHP вы можете установить cookie-файлы, используя функцию setcookie(), а PHP отправляет соответствующие HTTP headers.
+
+1 setcookie("TestCookie", "foobar");
+
+Что приводит к отправке этого заголовка:
+
+1 Set-Cookie: TestCookie=foobar
+
+Если дата истечения срока действия не указана, cookie удаляется, когда окно браузера закрыто.
+
+WWW-Authenticate
+
+Сайт может отправить этот header для аутентификации пользователя через HTTP. Когда браузер увидит этот header, он откроет диалоговое окно входа в систему.
+
+1 WWW-Authenticate: Basic realm="Restricted Area"
+
+Что будет выглядеть так:
+
+
+В руководстве PHP есть section, в котором приведены образцы кода, как это сделать в PHP.
+
+1 if (!isset($_SERVER['PHP_AUTH_USER'])) {
+2    header('WWW-Authenticate: Basic realm="My Realm"');
+3    header('HTTP/1.0 401 Unauthorized');
+4    echo 'Text to send if user hits Cancel button';
+5    exit;
+6  } else {
+7    echo "<p>Hello {$_SERVER['PHP_AUTH_USER']}.</p>";
+8    echo "<p>You entered {$_SERVER['PHP_AUTH_PW']} as your password.</p>";
+9 }
+
+Content-Encoding
+
+Этот header обычно устанавливается, когда возвращаемое содержимое сжимается.
+
+1 Content-Encoding: gzip
+В PHP, если вы используете функцию обратного вызова ob_gzhandler(), она будет автоматически установлена.
+```
